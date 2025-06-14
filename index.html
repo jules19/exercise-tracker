@@ -232,7 +232,7 @@
       // --- Initialization ---
       function init() {
         try {
-          // Initialize Firebase only ONCE.
+          // **FIXED:** Initialize Firebase only ONCE, inside this function.
           const app = initializeApp(firebaseConfig);
           db = getFirestore(app);
           auth = getAuth(app);
@@ -281,7 +281,6 @@
       // --- Data Handling ---
       function loadWorkouts() {
         if (!userId) return;
-        // **UPDATED PATH:** Using a simpler, more standard collection path.
         const workoutsCol = collection(db, `users/${userId}/workouts`);
         const q = query(workoutsCol);
 
@@ -292,7 +291,6 @@
               id: doc.id,
               ...doc.data(),
             }));
-            // Sort workouts by date ascending for the chart
             workouts.sort((a, b) => new Date(a.date) - new Date(b.date));
             renderWorkoutHistory();
             renderChart();
@@ -325,7 +323,6 @@
         };
 
         try {
-          // **UPDATED PATH:** Using a simpler, more standard collection path.
           await addDoc(collection(db, `users/${userId}/workouts`), newWorkout);
           showToast("Workout logged successfully!");
           workoutForm.reset();
@@ -339,7 +336,6 @@
       async function deleteWorkout(workoutId) {
         if (!userId || !workoutId) return;
         try {
-          // **UPDATED PATH:** Using a simpler, more standard collection path.
           await deleteDoc(doc(db, `users/${userId}/workouts`, workoutId));
           showToast("Workout deleted.");
           workoutToDeleteId = null; // Reset the ID
