@@ -202,7 +202,6 @@
       } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
       // --- Firebase Configuration ---
-      // This is your personal configuration object.
       const firebaseConfig = {
         apiKey: "AIzaSyAI3Pzy_SIYw9zZqmoZjHrWzRuiQ5LVRMU",
         authDomain: "my-exercise-tracker-f4798.firebaseapp.com",
@@ -211,11 +210,6 @@
         messagingSenderId: "559587388327",
         appId: "1:559587388327:web:93a0f9fe65556187952482",
       };
-      
-      // This variable is used in the database path.
-      // It must match the path defined in your Firestore security rules.
-      const appId = 'default-app-id';
-
 
       // --- App State ---
       let db, auth, userId, chart;
@@ -287,11 +281,8 @@
       // --- Data Handling ---
       function loadWorkouts() {
         if (!userId) return;
-        // The path now correctly uses the appId variable defined above.
-        const workoutsCol = collection(
-          db,
-          `artifacts/${appId}/users/${userId}/workouts`
-        );
+        // **UPDATED PATH:** Using a simpler, more standard collection path.
+        const workoutsCol = collection(db, `users/${userId}/workouts`);
         const q = query(workoutsCol);
 
         onSnapshot(
@@ -334,10 +325,8 @@
         };
 
         try {
-          await addDoc(
-            collection(db, `artifacts/${appId}/users/${userId}/workouts`),
-            newWorkout
-          );
+          // **UPDATED PATH:** Using a simpler, more standard collection path.
+          await addDoc(collection(db, `users/${userId}/workouts`), newWorkout);
           showToast("Workout logged successfully!");
           workoutForm.reset();
           setDefaultDate();
@@ -350,9 +339,8 @@
       async function deleteWorkout(workoutId) {
         if (!userId || !workoutId) return;
         try {
-          await deleteDoc(
-            doc(db, `artifacts/${appId}/users/${userId}/workouts`, workoutId)
-          );
+          // **UPDATED PATH:** Using a simpler, more standard collection path.
+          await deleteDoc(doc(db, `users/${userId}/workouts`, workoutId));
           showToast("Workout deleted.");
           workoutToDeleteId = null; // Reset the ID
         } catch (error) {
