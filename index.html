@@ -3,7 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Simple Exercise Tracker</title>
+    <meta name="theme-color" content="#0891b2" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" href="icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <title>Exercise Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link
@@ -182,37 +188,11 @@
       </div>
     </div>
 
-    <script type="module">
-      // Firebase Imports
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-      import {
-        getAuth,
-        signInAnonymously,
-        onAuthStateChanged,
-      } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-      import {
-        getFirestore,
-        collection,
-        addDoc,
-        onSnapshot,
-        query,
-        doc,
-        deleteDoc,
-        setLogLevel,
-      } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-      // --- Firebase Configuration ---
-      const firebaseConfig = {
-        apiKey: "AIzaSyAI3Pzy_SIYw9zZqmoZjHrWzRuiQ5LVRMU",
-        authDomain: "my-exercise-tracker-f4798.firebaseapp.com",
-        projectId: "my-exercise-tracker-f4798",
-        storageBucket: "my-exercise-tracker-f4798.appspot.com",
-        messagingSenderId: "559587388327",
-        appId: "1:559587388327:web:93a0f9fe65556187952482",
-      };
+    <script>
+      const STORAGE_KEY = "exercise-tracker-workouts";
 
       // --- App State ---
-      let db, auth, userId, chart;
+      let chart;
       let workouts = [];
       let workoutToDeleteId = null;
 
@@ -231,37 +211,14 @@
 
       // --- Initialization ---
       function init() {
-        try {
-          // **FIXED:** Initialize Firebase only ONCE, inside this function.
-          const app = initializeApp(firebaseConfig);
-          db = getFirestore(app);
-          auth = getAuth(app);
-          setLogLevel("debug");
-          
-          setupAuthListener();
-          setupEventListeners();
-          setDefaultDate();
-          renderChart(); // Initial chart render
-        } catch (error) {
-          console.error("Firebase initialization failed:", error);
-          displayError("Could not connect to the database.");
-        }
-      }
+        loadWorkouts();
+        setupEventListeners();
+        setDefaultDate();
+        renderChart();
 
-      function setupAuthListener() {
-        onAuthStateChanged(auth, (user) => {
-          if (user) {
-            console.log("User is signed in with uid:", user.uid);
-            userId = user.uid;
-            loadWorkouts();
-          } else {
-            console.log("No user signed in, attempting anonymous sign in.");
-            signInAnonymously(auth).catch((error) => {
-              console.error("Anonymous sign-in failed:", error);
-              displayError("Could not authenticate. Data will not be saved.");
-            });
-          }
-        });
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.register("sw.js");
+        }
       }
 
       function setupEventListeners() {
@@ -278,36 +235,26 @@
         });
       }
 
-      // --- Data Handling ---
-      function loadWorkouts() {
-        if (!userId) return;
-        const workoutsCol = collection(db, `users/${userId}/workouts`);
-        const q = query(workoutsCol);
-
-        onSnapshot(
-          q,
-          (snapshot) => {
-            workouts = snapshot.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            }));
-            workouts.sort((a, b) => new Date(a.date) - new Date(b.date));
-            renderWorkoutHistory();
-            renderChart();
-          },
-          (error) => {
-            console.error("Error fetching workouts: ", error);
-            displayError("Failed to load workout history.");
-          }
-        );
+      // --- Data Handling (localStorage) ---
+      function saveWorkouts() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(workouts));
       }
 
-      async function handleFormSubmit(e) {
-        e.preventDefault();
-        if (!userId) {
-          displayError("Cannot save workout: User not authenticated.");
-          return;
+      function loadWorkouts() {
+        try {
+          const stored = localStorage.getItem(STORAGE_KEY);
+          workouts = stored ? JSON.parse(stored) : [];
+          workouts.sort((a, b) => new Date(a.date) - new Date(b.date));
+        } catch (e) {
+          console.error("Error loading workouts:", e);
+          workouts = [];
         }
+        renderWorkoutHistory();
+        renderChart();
+      }
+
+      function handleFormSubmit(e) {
+        e.preventDefault();
 
         const date = workoutForm.date.value;
         if (workouts.some((workout) => workout.date === date)) {
@@ -316,33 +263,30 @@
         }
 
         const newWorkout = {
+          id: Date.now().toString(),
           date: date,
           squats: parseInt(workoutForm.squats.value) || 0,
           lunges: parseInt(workoutForm.lunges.value) || 0,
           plank: parseInt(workoutForm.plank.value) || 0,
         };
 
-        try {
-          await addDoc(collection(db, `users/${userId}/workouts`), newWorkout);
-          showToast("Workout logged successfully!");
-          workoutForm.reset();
-          setDefaultDate();
-        } catch (error) {
-          console.error("Error adding document: ", error);
-          displayError("Failed to save workout.");
-        }
+        workouts.push(newWorkout);
+        workouts.sort((a, b) => new Date(a.date) - new Date(b.date));
+        saveWorkouts();
+        renderWorkoutHistory();
+        renderChart();
+        showToast("Workout logged successfully!");
+        workoutForm.reset();
+        setDefaultDate();
       }
 
-      async function deleteWorkout(workoutId) {
-        if (!userId || !workoutId) return;
-        try {
-          await deleteDoc(doc(db, `users/${userId}/workouts`, workoutId));
-          showToast("Workout deleted.");
-          workoutToDeleteId = null; // Reset the ID
-        } catch (error) {
-          console.error("Error deleting workout: ", error);
-          displayError("Failed to delete workout.");
-        }
+      function deleteWorkout(workoutId) {
+        workouts = workouts.filter((w) => w.id !== workoutId);
+        saveWorkouts();
+        renderWorkoutHistory();
+        renderChart();
+        showToast("Workout deleted.");
+        workoutToDeleteId = null;
       }
 
       function handleListClick(e) {
