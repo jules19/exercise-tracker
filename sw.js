@@ -1,7 +1,8 @@
-const CACHE_NAME = 'exercise-tracker-v1';
+const CACHE_NAME = 'exercise-tracker-v2';
 const ASSETS = [
-  '/index.html',
-  '/manifest.json',
+  './',
+  './index.html',
+  './manifest.json',
   'https://cdn.tailwindcss.com',
   'https://cdn.jsdelivr.net/npm/chart.js',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
@@ -27,8 +28,10 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cached) => {
       const fetched = fetch(event.request).then((response) => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
         return response;
       }).catch(() => cached);
       return cached || fetched;
