@@ -117,6 +117,27 @@
               Log Workout
             </button>
           </form>
+
+          <!-- Backup / Restore -->
+          <div class="mt-6 pt-6 border-t border-gray-700">
+            <h3 class="text-sm font-medium text-gray-400 mb-3">Backup & Restore</h3>
+            <div class="flex gap-3">
+              <button
+                id="export-btn"
+                class="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold py-2 px-3 rounded-lg transition"
+              >
+                Export Data
+              </button>
+              <button
+                id="import-btn"
+                class="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold py-2 px-3 rounded-lg transition"
+              >
+                Import Data
+              </button>
+            </div>
+            <input type="file" id="import-file" accept=".json" class="hidden" />
+            <p class="text-xs text-gray-500 mt-2">Export your data regularly to avoid losing it.</p>
+          </div>
         </div>
 
         <!-- Progress Chart and History Section -->
@@ -208,6 +229,9 @@
       const confirmDeleteBtn = document.getElementById("confirm-delete-btn");
       const cancelDeleteBtn = document.getElementById("cancel-delete-btn");
       const historyContainer = document.getElementById("history-container");
+      const exportBtn = document.getElementById("export-btn");
+      const importBtn = document.getElementById("import-btn");
+      const importFile = document.getElementById("import-file");
 
       // --- Initialization ---
       function init() {
@@ -233,6 +257,9 @@
           }
           deleteModal.classList.add("hidden");
         });
+        exportBtn.addEventListener("click", exportWorkouts);
+        importBtn.addEventListener("click", () => importFile.click());
+        importFile.addEventListener("change", importWorkouts);
       }
 
       // --- Data Handling (localStorage) ---
@@ -366,6 +393,48 @@
             },
           },
         });
+      }
+
+      // --- Export / Import ---
+      function exportWorkouts() {
+        if (workouts.length === 0) {
+          displayError("No data to export.");
+          return;
+        }
+        const json = JSON.stringify(workouts, null, 2);
+        const blob = new Blob([json], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        const today = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = `exercise-tracker-backup-${today}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast("Data exported successfully!");
+      }
+
+      function importWorkouts(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          try {
+            const data = JSON.parse(event.target.result);
+            if (!Array.isArray(data) || !data.every(w => w.id && w.date)) {
+              throw new Error("Invalid format");
+            }
+            workouts = data;
+            workouts.sort((a, b) => new Date(a.date) - new Date(b.date));
+            saveWorkouts();
+            renderWorkoutHistory();
+            renderChart();
+            showToast(`Data imported! ${workouts.length} workout(s) loaded.`);
+          } catch (err) {
+            displayError("Import failed: invalid backup file.");
+          }
+        };
+        reader.readAsText(file);
+        importFile.value = "";
       }
 
       // --- Utility Functions ---
