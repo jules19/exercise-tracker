@@ -110,6 +110,22 @@
                 placeholder="e.g., 60"
               />
             </div>
+            <div>
+              <label
+                for="pressups"
+                class="block text-sm font-medium text-gray-300 mb-1"
+                >Press-ups (reps)</label
+              >
+              <input
+                type="number"
+                id="pressups"
+                name="pressups"
+                min="0"
+                required
+                class="w-full bg-gray-700 border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition"
+                placeholder="e.g., 20"
+              />
+            </div>
             <button
               type="submit"
               class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105 shadow-md"
@@ -295,6 +311,7 @@
           squats: parseInt(workoutForm.squats.value) || 0,
           lunges: parseInt(workoutForm.lunges.value) || 0,
           plank: parseInt(workoutForm.plank.value) || 0,
+          pressups: parseInt(workoutForm.pressups.value) || 0,
         };
 
         workouts.push(newWorkout);
@@ -347,7 +364,7 @@
             <div>
                 <p class="font-semibold text-white">${formatDate(workout.date)}</p>
                 <p class="text-sm text-gray-300">
-                    Squats: ${workout.squats} &bull; Lunges: ${workout.lunges} &bull; Plank: ${workout.plank}s
+                    Squats: ${workout.squats} &bull; Lunges: ${workout.lunges} &bull; Plank: ${workout.plank}s &bull; Press-ups: ${workout.pressups ?? 0}
                 </p>
             </div>
             <button data-id="${workout.id}" class="delete-btn text-gray-400 hover:text-red-500 transition-colors p-2 rounded-full">
@@ -369,6 +386,7 @@
         const squatsData = workouts.map((w) => w.squats);
         const lungesData = workouts.map((w) => w.lunges);
         const plankData = workouts.map((w) => w.plank);
+        const pressupsData = workouts.map((w) => w.pressups ?? 0);
 
         chart = new Chart(chartCanvas, {
           type: "line",
@@ -378,6 +396,7 @@
               { label: "Squats (reps)", data: squatsData, borderColor: "rgba(56, 189, 248, 1)", backgroundColor: "rgba(56, 189, 248, 0.2)", fill: true, tension: 0.3, pointBackgroundColor: "rgba(56, 189, 248, 1)", pointBorderColor: "#fff", pointHoverBackgroundColor: "#fff", pointHoverBorderColor: "rgba(56, 189, 248, 1)"},
               { label: "Lunges (reps)", data: lungesData, borderColor: "rgba(34, 197, 94, 1)", backgroundColor: "rgba(34, 197, 94, 0.2)", fill: true, tension: 0.3, pointBackgroundColor: "rgba(34, 197, 94, 1)", pointBorderColor: "#fff", pointHoverBackgroundColor: "#fff", pointHoverBorderColor: "rgba(34, 197, 94, 1)"},
               { label: "Plank (seconds)", data: plankData, borderColor: "rgba(234, 179, 8, 1)", backgroundColor: "rgba(234, 179, 8, 0.2)", fill: true, tension: 0.3, pointBackgroundColor: "rgba(234, 179, 8, 1)", pointBorderColor: "#fff", pointHoverBackgroundColor: "#fff", pointHoverBorderColor: "rgba(234, 179, 8, 1)"},
+              { label: "Press-ups (reps)", data: pressupsData, borderColor: "rgba(236, 72, 153, 1)", backgroundColor: "rgba(236, 72, 153, 0.2)", fill: true, tension: 0.3, pointBackgroundColor: "rgba(236, 72, 153, 1)", pointBorderColor: "#fff", pointHoverBackgroundColor: "#fff", pointHoverBorderColor: "rgba(236, 72, 153, 1)"},
             ],
           },
           options: {
